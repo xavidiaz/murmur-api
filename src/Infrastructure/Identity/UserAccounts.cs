@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Application.Auth;
 using Microsoft.AspNetCore.Identity;
 
@@ -28,6 +29,31 @@ public sealed class UserAccounts(UserManager<ApplicationUser> users, TimeProvide
         return user is null ? null : ToAccount(user);
     }
 
+    public async Task<UserAccount?> VerifyCredentialsAsync(string userNameOrEmail, string password, CancellationToken ct)
+    {
+        // Usernames can't contain '@', so the input says which lookup applies. Both use Identity's normalized
+        // (upper-cased) columns, so matching ignores capitals.
+        var user = userNameOrEmail.Contains('@')
+            ? await users.FindByEmailAsync(userNameOrEmail)
+            : await users.FindByNameAsync(userNameOrEmail);
+
+        if (user is null)
+        {
+            // Verify against a throwaway hash so an unknown user costs about as much as a wrong password.
+            users.PasswordHasher.VerifyHashedPassword(DummyUser, DummyPasswordHash(users.PasswordHasher), password);
+            return null;
+        }
+
+        return await users.CheckPasswordAsync(user, password) ? ToAccount(user) : null;
+    }
+
+    private static readonly ApplicationUser DummyUser = new() { DisplayName = "" };
+    private static string? _dummyPasswordHash;
+
+    private static string DummyPasswordHash(IPasswordHasher<ApplicationUser> hasher) =>
+        LazyInitializer.EnsureInitialized(ref _dummyPasswordHash,
+            () => hasher.HashPassword(DummyUser, Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))));
+
     private static UserAccount ToAccount(ApplicationUser user) =>
         new(user.Id, user.UserName!, user.DisplayName, user.AvatarUrl);
 
@@ -37,6 +63,8 @@ public sealed class UserAccounts(UserManager<ApplicationUser> users, TimeProvide
         nameof(IdentityErrorDescriber.DuplicateEmail) => AccountProblem.DuplicateEmail,
         nameof(IdentityErrorDescriber.InvalidUserName) => AccountProblem.InvalidUserName,
         nameof(IdentityErrorDescriber.InvalidEmail) => AccountProblem.InvalidEmail,
-        _ => AccountProblem.WeakPassword,
+        // PasswordTooShort, PasswordRequiresDigit, … (the password validator's codes)
+        _ when error.Code.StartsWith("Password", StringComparison.Ordinal) => AccountProblem.InvalidPassword,
+        _ => throw new InvalidOperationException($"Unexpected Identity error '{error.Code}' while creating an account."),
     };
 }

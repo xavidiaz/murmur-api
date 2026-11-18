@@ -13,7 +13,7 @@ public enum AccountProblem
     DuplicateEmail,
     InvalidUserName,
     InvalidEmail,
-    WeakPassword,
+    InvalidPassword,
 }
 
 public sealed record CreateAccountResult(UserAccount? Account, IReadOnlyList<AccountProblem> Problems)
@@ -27,6 +27,12 @@ public interface IUserAccounts
 {
     Task<CreateAccountResult> CreateAsync(NewUserAccount account, string password, CancellationToken ct);
     Task<UserAccount?> FindByIdAsync(Guid id, CancellationToken ct);
+
+    /// <summary>
+    /// The account whose username or email (case-insensitively) is <paramref name="userNameOrEmail"/> and whose
+    /// password is <paramref name="password"/>; null otherwise. Takes comparable time whether or not the account exists.
+    /// </summary>
+    Task<UserAccount?> VerifyCredentialsAsync(string userNameOrEmail, string password, CancellationToken ct);
 }
 
 /// <summary>An access token plus a refresh token that starts a new session (token family).</summary>

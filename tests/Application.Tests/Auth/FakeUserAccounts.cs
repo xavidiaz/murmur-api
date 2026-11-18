@@ -5,7 +5,7 @@ namespace Application.Tests.Auth;
 /// <summary>In-memory <see cref="IUserAccounts"/> that records what the use case asked for.</summary>
 internal sealed class FakeUserAccounts : IUserAccounts
 {
-    private readonly List<UserAccount> _accounts = [];
+    private readonly List<(UserAccount Account, string Email, string Password)> _accounts = [];
 
     public NewUserAccount? LastCreated { get; private set; }
     public string? LastPassword { get; private set; }
@@ -21,12 +21,21 @@ internal sealed class FakeUserAccounts : IUserAccounts
             return Task.FromResult(CreateAccountResult.Failed([.. NextProblems]));
 
         var created = new UserAccount(Guid.NewGuid(), account.UserName, account.DisplayName, null);
-        _accounts.Add(created);
+        _accounts.Add((created, account.Email, password));
         return Task.FromResult(CreateAccountResult.Created(created));
     }
 
     public Task<UserAccount?> FindByIdAsync(Guid id, CancellationToken ct) =>
-        Task.FromResult(_accounts.SingleOrDefault(a => a.Id == id));
+        Task.FromResult<UserAccount?>(_accounts.SingleOrDefault(a => a.Account.Id == id).Account);
+
+    /// <summary>Usernames and emails match case-insensitively, like the real store.</summary>
+    public Task<UserAccount?> VerifyCredentialsAsync(string userNameOrEmail, string password, CancellationToken ct)
+    {
+        var match = _accounts.SingleOrDefault(a =>
+            string.Equals(a.Account.UserName, userNameOrEmail, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(a.Email, userNameOrEmail, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult<UserAccount?>(match.Account is not null && match.Password == password ? match.Account : null);
+    }
 }
 
 /// <summary><see cref="ITokenIssuer"/> that hands out predictable tokens.</summary>

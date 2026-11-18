@@ -44,9 +44,9 @@ public sealed class SignUp(IUserAccounts accounts, ITokenIssuer tokens)
     private static AppError ToError(IReadOnlyList<AccountProblem> problems)
     {
         if (problems.Contains(AccountProblem.DuplicateUserName))
-            return AppError.Conflict(ErrorCodes.UserNameTaken, "That username is already taken.");
+            return AuthErrors.UserNameTaken;
         if (problems.Contains(AccountProblem.DuplicateEmail))
-            return AppError.Conflict(ErrorCodes.EmailTaken, "That email is already in use.");
+            return AuthErrors.EmailTaken;
 
         var errors = new Dictionary<string, string[]>();
         foreach (var problem in problems.Distinct())
@@ -55,7 +55,8 @@ public sealed class SignUp(IUserAccounts accounts, ITokenIssuer tokens)
             {
                 AccountProblem.InvalidUserName => ("userName", "Username may only contain a-z, 0-9, '_' and '.'."),
                 AccountProblem.InvalidEmail => ("email", "Email is not valid."),
-                _ => ("password", "Password must be at least 8 characters and contain a digit."),
+                AccountProblem.InvalidPassword => ("password", "Password must be at least 8 characters and contain a digit."),
+                _ => throw new InvalidOperationException($"Unhandled account problem '{problem}'."),
             };
             errors[field] = [message];
         }
