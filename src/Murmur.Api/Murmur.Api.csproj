@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Murmur.Application\Murmur.Application.csproj" />
+    <ProjectReference Include="..\Murmur.Infrastructure\Murmur.Infrastructure.csproj" />
+    <ProjectReference Include="..\Murmur.Contracts\Murmur.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>
