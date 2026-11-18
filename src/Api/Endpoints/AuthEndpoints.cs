@@ -15,6 +15,7 @@ internal static class AuthEndpoints
         var auth = app.MapGroup("").WithTags("Auth");
 
         auth.MapPost(ApiRoutes.Auth.Register, RegisterAsync);
+        auth.MapPost(ApiRoutes.Auth.Login, LoginAsync);
         auth.MapGet(ApiRoutes.Auth.Me, MeAsync).RequireAuthorization();
 
         return app;
@@ -27,6 +28,13 @@ internal static class AuthEndpoints
         return result.IsSuccess
             ? TypedResults.Created(ApiRoutes.Auth.Me, result.Value)
             : result.Error.ToProblem();
+    }
+
+    private static async Task<Results<Ok<AuthResponse>, ProblemHttpResult>> LoginAsync(
+        LoginRequest request, SignIn signIn, CancellationToken ct)
+    {
+        var result = await signIn.HandleAsync(request, ct);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
     }
 
     private static async Task<Results<Ok<UserDto>, UnauthorizedHttpResult>> MeAsync(

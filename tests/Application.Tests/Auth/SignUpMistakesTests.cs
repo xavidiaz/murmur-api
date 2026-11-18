@@ -97,3 +97,41 @@ public sealed class SignUpMistakesTests
         Assert.Equal(code, result.Error.Code);
     }
 }
+
+/// <summary>Follow-up to API-AUTH-02: how account-store refusals are reported.</summary>
+public sealed class SignUpStoreRefusalTests
+{
+    private readonly FakeUserAccounts _accounts = new();
+    private SignUp UseCase => new(_accounts, new FakeTokenIssuer());
+
+    private static RegisterRequest Valid() => new("alice_x", "alice@example.test", "Passw0rd-123", "Alice");
+
+    [Theory]
+    [Trait("Story", "API-AUTH-02")]
+    [InlineData(AccountProblem.InvalidUserName, "userName")]
+    [InlineData(AccountProblem.InvalidEmail, "email")]
+    [InlineData(AccountProblem.InvalidPassword, "password")]
+    public async Task A_store_refusal_is_reported_for_the_field_it_concerns(AccountProblem problem, string field)
+    {
+        // Given
+        _accounts.NextProblems.Add(problem);
+
+        // When
+        var result = await UseCase.HandleAsync(Valid(), TestContext.Current.CancellationToken);
+
+        // Then
+        Assert.Equal([field], result.Error.Errors!.Keys);
+    }
+
+    [Fact]
+    [Trait("Story", "API-AUTH-02")]
+    public async Task An_unknown_store_refusal_is_a_programming_error_not_a_password_problem()
+    {
+        // Given
+        _accounts.NextProblems.Add((AccountProblem)999);
+
+        // When / Then
+        await Assert.ThrowsAnyAsync<InvalidOperationException>(() =>
+            UseCase.HandleAsync(Valid(), TestContext.Current.CancellationToken));
+    }
+}
