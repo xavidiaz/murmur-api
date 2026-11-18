@@ -1,0 +1,13 @@
+global using System.Net;
+global using System.Net.Http.Json;
+global using Api.AcceptanceTests.Infrastructure;
+global using Contracts;
+global using Contracts.Auth;
+global using Contracts.Channels;
+global using Contracts.Dms;
+global using Contracts.Invites;
+global using Contracts.Messages;
+global using Contracts.Realtime;
+global using Contracts.Servers;
+global using Contracts.Users;
+global using Xunit;
