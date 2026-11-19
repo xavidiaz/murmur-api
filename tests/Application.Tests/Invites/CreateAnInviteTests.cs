@@ -30,6 +30,16 @@ internal sealed class FakeInviteRepository : IInviteRepository
         Saved.Add(invite);
         return Task.FromResult(true);
     }
+
+    /// <summary>Previews served by <see cref="FindPreviewAsync"/>, keyed by code.</summary>
+    public Dictionary<string, InvitePreview> Previews { get; } = new(StringComparer.Ordinal);
+    public List<string> PreviewLookups { get; } = [];
+
+    public Task<InvitePreview?> FindPreviewAsync(string code, CancellationToken ct)
+    {
+        PreviewLookups.Add(code);
+        return Task.FromResult(Previews.GetValueOrDefault(code));
+    }
 }
 
 /// <summary>Create an invite — API-INV-02: the use case, with repositories faked.</summary>

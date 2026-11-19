@@ -24,4 +24,15 @@ public sealed class InviteRepository(AppDbContext db) : IInviteRepository
             return false;
         }
     }
+
+    /// <summary>One query: the invite joined to its server, with a COUNT of the server's members.</summary>
+    public async Task<InvitePreview?> FindPreviewAsync(string code, CancellationToken ct)
+    {
+        var row = await db.Invites
+            .AsNoTracking()
+            .Where(i => i.Code == code)
+            .Join(db.Servers, i => i.ServerId, s => s.Id, (i, s) => new { Invite = i, s.Name, s.IconUrl, MemberCount = s.Members.Count() })
+            .SingleOrDefaultAsync(ct);
+        return row is null ? null : new InvitePreview(row.Invite, row.Name, row.IconUrl, row.MemberCount);
+    }
 }

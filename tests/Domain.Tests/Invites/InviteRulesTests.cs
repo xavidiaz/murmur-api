@@ -241,3 +241,33 @@ public sealed class InviteRulesTests
         Assert.All(counts, kv => Assert.InRange(kv.Value, expected * 0.75, expected * 1.25));
     }
 }
+
+/// <summary>Preview an invite — API-INV-03: recognising a well-formed code without a lookup.</summary>
+public sealed class InviteCodeFormatTests
+{
+    [Theory]
+    [Trait("Story", "API-INV-03")]
+    [InlineData("abcdEFGH")]
+    [InlineData("01234567")]
+    [InlineData("Zz9aA0bB")]
+    public void A_code_of_8_letters_and_digits_is_well_formed(string code) =>
+        Assert.True(InviteCode.IsWellFormed(code));
+
+    [Theory]
+    [Trait("Story", "API-INV-03")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("abcdefg")]
+    [InlineData("abcdefghi")]
+    [InlineData("abcd-fgh")]
+    [InlineData("abcd_fgh")]
+    [InlineData("abcd fgh")]
+    [InlineData("abcdéfgh")]
+    public void Anything_else_is_not(string? code) =>
+        Assert.False(InviteCode.IsWellFormed(code));
+
+    [Fact]
+    [Trait("Story", "API-INV-03")]
+    public void Every_generated_code_is_well_formed() =>
+        Assert.All(Enumerable.Range(0, 1000).Select(_ => InviteCode.Generate()), c => Assert.True(InviteCode.IsWellFormed(c)));
+}

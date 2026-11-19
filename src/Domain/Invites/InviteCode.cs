@@ -13,4 +13,8 @@ public static class InviteCode
     /// uniformly (no modulo bias). Uniqueness against stored codes is the caller's job.
     /// </summary>
     public static string Generate() => RandomNumberGenerator.GetString(Alphabet, Length);
+
+    /// <summary>Exactly 8 characters of <c>[0-9A-Za-z]</c>; anything else can't be a code, so needn't be looked up.</summary>
+    public static bool IsWellFormed(string? code) =>
+        code is { Length: Length } && code.All(char.IsAsciiLetterOrDigit);
 }
