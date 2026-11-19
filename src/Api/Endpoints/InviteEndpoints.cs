@@ -14,10 +14,10 @@ internal static class InviteEndpoints
     {
         var invites = app.MapGroup("").WithTags("Invites");
 
-        invites.MapPost(ApiRoutes.Servers.Collection + "/{serverId:guid}/invites", CreateAsync).RequireAuthorization();
+        invites.MapPost(ApiRoutes.Servers.Collection + "/{serverId:guid}/invites", CreateAsync);
         // Anonymous on purpose: people follow an invite link before they have an account.
         invites.MapGet(ApiRoutes.Base + "/invites/{code}", PreviewAsync).AllowAnonymous();
-        invites.MapPost(ApiRoutes.Base + "/invites/{code}/accept", AcceptAsync).RequireAuthorization();
+        invites.MapPost(ApiRoutes.Base + "/invites/{code}/accept", AcceptAsync);
 
         return app;
     }

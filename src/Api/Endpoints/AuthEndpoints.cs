@@ -14,12 +14,13 @@ internal static class AuthEndpoints
     {
         var auth = app.MapGroup("").WithTags("Auth");
 
-        auth.MapPost(ApiRoutes.Auth.Register, RegisterAsync);
-        auth.MapPost(ApiRoutes.Auth.Login, LoginAsync);
+        // Public (sign-in is required by default): you can't have a token before you register or sign in.
+        auth.MapPost(ApiRoutes.Auth.Register, RegisterAsync).AllowAnonymous();
+        auth.MapPost(ApiRoutes.Auth.Login, LoginAsync).AllowAnonymous();
         // Anonymous on purpose: the app refreshes once its access token has expired.
         auth.MapPost(ApiRoutes.Auth.Refresh, RefreshAsync).AllowAnonymous();
-        auth.MapPost(ApiRoutes.Auth.Logout, LogoutAsync).RequireAuthorization();
-        auth.MapGet(ApiRoutes.Auth.Me, MeAsync).RequireAuthorization();
+        auth.MapPost(ApiRoutes.Auth.Logout, LogoutAsync);
+        auth.MapGet(ApiRoutes.Auth.Me, MeAsync);
 
         return app;
     }
