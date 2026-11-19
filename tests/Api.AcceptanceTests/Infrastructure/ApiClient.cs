@@ -128,6 +128,10 @@ public sealed class ApiClient : IDisposable
         await AcceptInviteAsync(invite.Code);
     }
 
+    /// <summary>Creates a role on <paramref name="serverId"/> (asserts 201).</summary>
+    public Task<RoleDto> CreateRoleAsync(Guid serverId, string? name = null, int? color = null, Permissions permissions = Permissions.None) =>
+        PostAsync<RoleDto>(ApiRoutes.Servers.Roles(serverId), new CreateRoleRequest(name ?? Unique.Name("role"), color, permissions), HttpStatusCode.Created);
+
     /// <summary>Posts a channel message (asserts 201).</summary>
     public Task<MessageDto> SendAsync(Guid channelId, string? content = null, Guid? nonce = null) =>
         PostAsync<MessageDto>(ApiRoutes.Channels.Messages(channelId), new SendMessageRequest(content ?? Unique.Name("msg"), nonce), HttpStatusCode.Created);
