@@ -1,4 +1,5 @@
 using Application.Servers;
+using Contracts.Users;
 using Domain.Servers;
 using Microsoft.EntityFrameworkCore;
 
@@ -57,6 +58,34 @@ public sealed class ServerRepository(AppDbContext db) : IServerRepository
             .Where(s => s.Id == serverId && s.Members.Any(m => m.UserId == userId))
             .Select(s => s.Roles.OrderBy(r => r.Position).ToList())
             .SingleOrDefaultAsync(ct);
+
+    /// <summary>
+    /// One query: the server's members joined to their user rows, with each member's role ids (by role position) as a
+    /// correlated subquery, only if <paramref name="userId"/> is a member. A server always has at least its owner, so an
+    /// empty result means "no such server or not a member" → null.
+    /// </summary>
+    public async Task<IReadOnlyList<MemberSummary>?> ListMembersForMemberAsync(Guid serverId, Guid userId, CancellationToken ct)
+    {
+        var members = db.Set<ServerMember>();
+        var rows = await members
+            .Where(m => m.ServerId == serverId && members.Any(me => me.ServerId == serverId && me.UserId == userId))
+            .Join(db.Users, m => m.UserId, u => u.Id, (m, u) => new { Member = m, User = u })
+            .OrderBy(x => x.Member.JoinedAt).ThenBy(x => x.Member.UserId)
+            .Select(x => new
+            {
+                x.User.Id, x.User.UserName, x.User.DisplayName, x.User.AvatarUrl,
+                x.Member.Nickname, x.Member.JoinedAt,
+                RoleIds = db.Set<Role>()
+                    .Where(r => r.ServerId == serverId && x.Member.RoleAssignments.Any(a => a.RoleId == r.Id))
+                    .OrderBy(r => r.Position)
+                    .Select(r => r.Id)
+                    .ToList(),
+            })
+            .ToListAsync(ct);
+        if (rows.Count == 0)
+            return null;
+        return [.. rows.Select(r => new MemberSummary(new UserDto(r.Id, r.UserName!, r.DisplayName, r.AvatarUrl), r.Nickname, r.JoinedAt, r.RoleIds))];
+    }
 
     /// <summary>One query: the server row filtered on membership, its @everyone permissions and a COUNT of members.</summary>
     public Task<ServerAccess?> GetAccessAsync(Guid serverId, Guid userId, CancellationToken ct) =>

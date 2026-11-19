@@ -13,6 +13,12 @@ public sealed record ServerSummary(Guid Id, string Name, string? IconUrl, Guid O
 public sealed record ServerAccess(Guid ServerId, string Name, string? IconUrl, Guid OwnerId, Permissions EveryonePermissions,
     IReadOnlyList<Permissions> MemberRolePermissions, int MemberCount);
 
+/// <summary>
+/// A member as listed: their profile, nickname, when they joined and the roles they hold (never <c>@everyone</c>), in
+/// role position order.
+/// </summary>
+public sealed record MemberSummary(Contracts.Users.UserDto User, string? Nickname, DateTimeOffset JoinedAt, IReadOnlyList<Guid> RoleIds);
+
 /// <summary>Port: persistence for the <see cref="Server"/> aggregate.</summary>
 public interface IServerRepository
 {
@@ -47,4 +53,10 @@ public interface IServerRepository
 
     /// <summary>The server's roles ordered by position, in one query; null when it doesn't exist or the user isn't a member.</summary>
     Task<IReadOnlyList<Role>?> ListRolesForMemberAsync(Guid serverId, Guid userId, CancellationToken ct);
+
+    /// <summary>
+    /// Every member, ordered by when they joined (then by user id), in one query; null when the server doesn't exist or
+    /// <paramref name="userId"/> isn't a member.
+    /// </summary>
+    Task<IReadOnlyList<MemberSummary>?> ListMembersForMemberAsync(Guid serverId, Guid userId, CancellationToken ct);
 }
