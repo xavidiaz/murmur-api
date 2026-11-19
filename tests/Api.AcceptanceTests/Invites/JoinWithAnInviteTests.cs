@@ -119,8 +119,9 @@ public sealed class JoinWithAnInviteTests(PostgresFixture db) : AcceptanceTest(d
         await response.AssertProblemAsync(HttpStatusCode.Gone, ErrorCodes.InviteExhausted);
         var davesServers = await dave.GetAsync<ServerDto[]>(ApiRoutes.Servers.Collection);
         Assert.DoesNotContain(davesServers, s => s.Id == server.Id);
-        var preview = await alice.GetAsync<InviteDto>(ApiRoutes.Invites.Item(invite.Code));
-        Assert.Equal(1, preview.Uses);
+        // A dead link never shows the server: previewing it now says it's used up.
+        var preview = await alice.GetAsync(ApiRoutes.Invites.Item(invite.Code));
+        await preview.AssertProblemAsync(HttpStatusCode.Gone, ErrorCodes.InviteExhausted);
     }
 
     [Fact]
