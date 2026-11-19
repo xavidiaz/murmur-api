@@ -8,7 +8,7 @@ This repository is the API. The web client lives in [murmur-web](https://github.
 
 ## Project status
 
-**Milestone 1: 11 / 47 API stories done**
+**Milestone 1: 12 / 47 API stories done**
 
 In progress: [open story issues](https://github.com/xavidiaz/murmur-api/issues?q=is%3Aissue+is%3Aopen+label%3Astory)
 
@@ -55,7 +55,7 @@ Each story's PR updates its row here and the progress line above.
 
 | Story | Tag | Status |
 |---|---|---|
-| Invite rules | `API-INV-01` | ⬜ |
+| Invite rules | `API-INV-01` | ✅ [#26](https://github.com/xavidiaz/murmur-api/pull/26) |
 | Create an invite | `API-INV-02` | ⬜ |
 | Preview an invite | `API-INV-03` | ⬜ |
 | Join with an invite | `API-INV-04` | ⬜ |
