@@ -14,7 +14,7 @@ Legend: ✅ done (links to the merged PR) · 🚧 in progress (links to the issu
 
 Each story's PR updates its row here and the progress line above.
 
-### Accounts and sign-in (8/8)
+### Accounts and sign-in
 
 | Story | Tag | Status |
 |---|---|---|
