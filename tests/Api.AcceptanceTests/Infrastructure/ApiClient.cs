@@ -132,6 +132,17 @@ public sealed class ApiClient : IDisposable
     public Task<RoleDto> CreateRoleAsync(Guid serverId, string? name = null, int? color = null, Permissions permissions = Permissions.None) =>
         PostAsync<RoleDto>(ApiRoutes.Servers.Roles(serverId), new CreateRoleRequest(name ?? Unique.Name("role"), color, permissions), HttpStatusCode.Created);
 
+    /// <summary>Gives <paramref name="userId"/> the role (asserts 204).</summary>
+    public async Task AssignRoleAsync(Guid serverId, Guid userId, Guid roleId) =>
+        await AssertStatusAsync(await PutAsync(ApiRoutes.Servers.MemberRole(serverId, userId, roleId)), HttpStatusCode.NoContent);
+
+    /// <summary>The <see cref="MemberDto"/> of <paramref name="userId"/> from the server's members list (asserts it is there).</summary>
+    public async Task<MemberDto> GetMemberAsync(Guid serverId, Guid userId)
+    {
+        var members = await GetAsync<MemberDto[]>(ApiRoutes.Servers.Members(serverId));
+        return Assert.Single(members, m => m.User.Id == userId);
+    }
+
     /// <summary>Posts a channel message (asserts 201).</summary>
     public Task<MessageDto> SendAsync(Guid channelId, string? content = null, Guid? nonce = null) =>
         PostAsync<MessageDto>(ApiRoutes.Channels.Messages(channelId), new SendMessageRequest(content ?? Unique.Name("msg"), nonce), HttpStatusCode.Created);

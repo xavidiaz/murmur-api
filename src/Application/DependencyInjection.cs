@@ -25,6 +25,9 @@ public static class DependencyInjection
         services.AddScoped<UpdateRole>();
         services.AddScoped<DeleteRole>();
         services.AddScoped<ListRoles>();
+        services.AddScoped<AssignRole>();
+        services.AddScoped<UnassignRole>();
+        services.AddScoped<ListMembers>();
         return services;
     }
 }

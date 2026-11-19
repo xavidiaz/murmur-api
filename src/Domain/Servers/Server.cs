@@ -124,6 +124,8 @@ public sealed class Server
     /// Gives a member one of this server's roles. Refused for non-members, for roles that aren't this server's, and for
     /// <c>@everyone</c> (every member has it implicitly).
     /// </summary>
+    // API-ROLE-04 adds the role hierarchy to AssignRole/UnassignRole/MoveRole (at the Application call sites, which know
+    // who is acting) and concurrency protection for role writes.
     public RoleAssignmentOutcome AssignRole(Guid userId, Guid roleId) =>
         CheckAssignment(userId, roleId, out var member) ?? (member!.Assign(roleId) ? RoleAssignmentOutcome.Done : RoleAssignmentOutcome.NoChange);
 
