@@ -85,6 +85,24 @@ namespace Infrastructure.Persistence.Migrations
                     b.ToTable("Channels", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Servers.MemberRole", b =>
+                {
+                    b.Property<Guid>("ServerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ServerId", "UserId", "RoleId");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("MemberRoles", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Servers.Role", b =>
                 {
                     b.Property<Guid>("Id")
@@ -369,6 +387,21 @@ namespace Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Domain.Servers.MemberRole", b =>
+                {
+                    b.HasOne("Domain.Servers.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Servers.ServerMember", null)
+                        .WithMany("RoleAssignments")
+                        .HasForeignKey("ServerId", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Domain.Servers.Role", b =>
                 {
                     b.HasOne("Domain.Servers.Server", null)
@@ -445,6 +478,11 @@ namespace Infrastructure.Persistence.Migrations
                     b.Navigation("Members");
 
                     b.Navigation("Roles");
+                });
+
+            modelBuilder.Entity("Domain.Servers.ServerMember", b =>
+                {
+                    b.Navigation("RoleAssignments");
                 });
 #pragma warning restore 612, 618
         }

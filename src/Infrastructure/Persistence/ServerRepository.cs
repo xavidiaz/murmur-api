@@ -33,6 +33,7 @@ public sealed class ServerRepository(AppDbContext db) : IServerRepository
             .Include(s => s.Roles)
             .Include(s => s.Channels)
             .Include(s => s.Members.Where(m => m.UserId == userId))
+                .ThenInclude(m => m.RoleAssignments)
             .SingleOrDefaultAsync(ct);
 
     /// <summary>One query: the server row filtered on membership, its @everyone permissions and a COUNT of members.</summary>
@@ -42,6 +43,10 @@ public sealed class ServerRepository(AppDbContext db) : IServerRepository
             .Select(s => new ServerAccess(
                 s.Id, s.Name, s.IconUrl, s.OwnerId,
                 s.Roles.Where(r => r.IsEveryone).Select(r => r.Permissions).Single(),
+                s.Roles
+                    .Where(r => s.Members.Any(m => m.UserId == userId && m.RoleAssignments.Any(a => a.RoleId == r.Id)))
+                    .Select(r => r.Permissions)
+                    .ToList(),
                 s.Members.Count()))
             .SingleOrDefaultAsync(ct);
 }
