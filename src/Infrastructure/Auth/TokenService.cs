@@ -89,15 +89,43 @@ public sealed class TokenService(AppDbContext db, TimeProvider clock, IOptions<J
         return RotationResult.Rotated(new RotatedRefreshToken(current.UserId, next.Token, next.ExpiresAt));
     }
 
+    /// <summary>
+    /// Signs out the session of <paramref name="refreshToken"/> if the token is <paramref name="userId"/>'s.
+    /// The token may already have been rotated: it still identifies the device's session, and a sign-out racing
+    /// that device's own refresh must still end it. Like rotation, this takes the family lock first (see
+    /// <see cref="RotateRefreshTokenAsync"/>), so a concurrent rotation either commits its new token before the
+    /// revocation runs, and is revoked with the rest, or runs afterwards and finds its token revoked.
+    /// </summary>
+    public async Task<bool> EndSessionAsync(Guid userId, string refreshToken, CancellationToken ct)
+    {
+        var hash = Hash(refreshToken);
+        var familyId = await db.RefreshTokens.Where(t => t.TokenHash == hash && t.UserId == userId)
+            .Select(t => (Guid?)t.FamilyId).SingleOrDefaultAsync(ct);
+        if (familyId is not { } family)
+            return false; // unknown, or someone else's: change nothing
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        await LockFamilyAsync(family, ct);
+        var revoked = await RevokeFamilyAsync(family, ct); // 0 when the session already ended
+        await transaction.CommitAsync(ct);
+        return revoked > 0;
+    }
+
     /// <summary>Reuse detected: revoke every live token of the family (under the family lock) and commit.</summary>
     private async Task<RotationResult> EndFamilyAsync(IDbContextTransaction transaction, Guid familyId, CancellationToken ct)
     {
-        var now = clock.GetUtcNow();
-        await db.RefreshTokens
-            .Where(t => t.FamilyId == familyId && t.RevokedAt == null)
-            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAt, now), ct);
+        await RevokeFamilyAsync(familyId, ct);
         await transaction.CommitAsync(ct);
         return RotationResult.Refused(RefreshTokenProblem.AlreadyRotated);
+    }
+
+    /// <summary>Revokes every live token of a family. The caller must hold the family lock (<see cref="LockFamilyAsync"/>).</summary>
+    private Task<int> RevokeFamilyAsync(Guid familyId, CancellationToken ct)
+    {
+        var now = clock.GetUtcNow();
+        return db.RefreshTokens
+            .Where(t => t.FamilyId == familyId && t.RevokedAt == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAt, now), ct);
     }
 
     /// <summary>

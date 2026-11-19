@@ -75,6 +75,14 @@ internal sealed class FakeTokenIssuer : ITokenIssuer
         return Task.FromResult(RotationResult.Rotated(new RotatedRefreshToken(userId, next, Now.AddDays(30))));
     }
 
+    public List<(Guid UserId, string RefreshToken)> SessionsEnded { get; } = [];
+
+    public Task<bool> EndSessionAsync(Guid userId, string refreshToken, CancellationToken ct)
+    {
+        SessionsEnded.Add((userId, refreshToken));
+        return Task.FromResult(LiveRefreshTokens.Remove(refreshToken));
+    }
+
     public AccessToken CreateAccessToken(UserAccount user)
     {
         AccessTokensFor.Add(user.Id);

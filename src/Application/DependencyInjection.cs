@@ -11,6 +11,7 @@ public static class DependencyInjection
         services.AddScoped<GetCurrentUser>();
         services.AddScoped<SignIn>();
         services.AddScoped<RefreshSession>();
+        services.AddScoped<SignOut>();
         return services;
     }
 }
