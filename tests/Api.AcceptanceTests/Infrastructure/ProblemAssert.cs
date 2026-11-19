@@ -45,6 +45,29 @@ public static class ProblemAssert
         return body;
     }
 
+    /// <summary>Problem members that legitimately differ per request; ignored by <see cref="AssertSameProblem"/>.</summary>
+    public static readonly IReadOnlyList<string> PerRequestFields = ["traceId", "instance"];
+
+    /// <summary>
+    /// Asserts two problem bodies are indistinguishable once per-request members (<see cref="PerRequestFields"/>)
+    /// are removed — e.g. so a response can't reveal whether a resource exists.
+    /// </summary>
+    public static void AssertSameProblem(JsonElement expected, JsonElement actual)
+    {
+        var a = WithoutPerRequestFields(expected);
+        var b = WithoutPerRequestFields(actual);
+        Assert.True(System.Text.Json.Nodes.JsonNode.DeepEquals(a, b),
+            $"problem bodies differ (ignoring {string.Join(", ", PerRequestFields)}):\n first:  {a}\n second: {b}");
+    }
+
+    private static System.Text.Json.Nodes.JsonObject WithoutPerRequestFields(JsonElement problem)
+    {
+        var node = System.Text.Json.Nodes.JsonNode.Parse(problem.GetRawText())!.AsObject();
+        foreach (var field in PerRequestFields)
+            node.Remove(field);
+        return node;
+    }
+
     /// <summary>The problem's <c>code</c> extension, or null.</summary>
     public static string? Code(this JsonElement problem) =>
         problem.TryGetProperty("code", out var c) ? c.GetString() : null;

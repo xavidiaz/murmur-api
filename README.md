@@ -8,9 +8,11 @@ This repository is the API. The web client lives in [murmur-web](https://github.
 
 ## Project status
 
-**Milestone 1: 10 / 47 API stories done**
+**Milestone 1: 11 / 47 API stories done**
 
-Legend: ✅ done (links to the merged PR) · 🚧 in progress (links to the issue) · ⬜ not started
+In progress: [open story issues](https://github.com/xavidiaz/murmur-api/issues?q=is%3Aissue+is%3Aopen+label%3Astory)
+
+Legend: ✅ done (links to the merged PR) · ⬜ not done yet
 
 Each story's PR updates its row here and the progress line above.
 
@@ -33,7 +35,7 @@ Each story's PR updates its row here and the progress line above.
 |---|---|---|
 | A new server starts in a sensible state | `API-SRV-01` | ✅ [#19](https://github.com/xavidiaz/murmur-api/pull/19) |
 | Create a server | `API-SRV-02` | ✅ [#21](https://github.com/xavidiaz/murmur-api/pull/21) |
-| See my servers | `API-SRV-03` | ⬜ |
+| See my servers | `API-SRV-03` | ✅ [#23](https://github.com/xavidiaz/murmur-api/pull/23) |
 | Edit a server | `API-SRV-04` | ⬜ |
 | Delete a server | `API-SRV-05` | ⬜ |
 | See who's in a server | `API-SRV-06` | ⬜ |
