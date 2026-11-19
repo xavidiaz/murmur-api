@@ -9,8 +9,7 @@ namespace Application.Servers;
 /// </summary>
 public static class PermissionService
 {
-    public static readonly Permissions All =
-        Enum.GetValues<Permissions>().Aggregate(Permissions.None, (all, p) => all | p);
+    public static readonly Permissions All = PermissionFlags.All;
 
     /// <summary>The rule itself. Every other overload only gathers its inputs.</summary>
     public static Permissions Compute(Guid ownerId, Guid userId, bool isMember, Permissions everyone,

@@ -23,6 +23,7 @@ app.UseAuthorization();
 app.MapAuthEndpoints();
 app.MapServerEndpoints();
 app.MapInviteEndpoints();
+app.MapRoleEndpoints();
 
 app.Run();
 

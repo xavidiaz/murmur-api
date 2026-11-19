@@ -1,5 +1,6 @@
 using Application.Auth;
 using Application.Invites;
+using Application.Roles;
 using Application.Servers;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -20,6 +21,10 @@ public static class DependencyInjection
         services.AddScoped<CreateInvite>();
         services.AddScoped<PreviewInvite>();
         services.AddScoped<AcceptInvite>();
+        services.AddScoped<CreateRole>();
+        services.AddScoped<UpdateRole>();
+        services.AddScoped<DeleteRole>();
+        services.AddScoped<ListRoles>();
         return services;
     }
 }

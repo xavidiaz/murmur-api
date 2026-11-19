@@ -36,6 +36,28 @@ public sealed class ServerRepository(AppDbContext db) : IServerRepository
                 .ThenInclude(m => m.RoleAssignments)
             .SingleOrDefaultAsync(ct);
 
+    /// <summary>
+    /// The whole aggregate, tracked, for a write. Split into one query per collection so members × roles × channels
+    /// don't multiply into one wide result.
+    /// </summary>
+    public Task<Server?> LoadAsync(Guid serverId, CancellationToken ct) =>
+        db.Servers
+            .Include(s => s.Roles)
+            .Include(s => s.Channels)
+            .Include(s => s.Members).ThenInclude(m => m.RoleAssignments)
+            .AsSplitQuery()
+            .SingleOrDefaultAsync(s => s.Id == serverId, ct);
+
+    public Task SaveChangesAsync(CancellationToken ct) => db.SaveChangesAsync(ct);
+
+    /// <summary>One query: the roles in position order, only if the user is a member (null otherwise).</summary>
+    public async Task<IReadOnlyList<Role>?> ListRolesForMemberAsync(Guid serverId, Guid userId, CancellationToken ct) =>
+        await db.Servers
+            .AsNoTracking()
+            .Where(s => s.Id == serverId && s.Members.Any(m => m.UserId == userId))
+            .Select(s => s.Roles.OrderBy(r => r.Position).ToList())
+            .SingleOrDefaultAsync(ct);
+
     /// <summary>One query: the server row filtered on membership, its @everyone permissions and a COUNT of members.</summary>
     public Task<ServerAccess?> GetAccessAsync(Guid serverId, Guid userId, CancellationToken ct) =>
         db.Servers
