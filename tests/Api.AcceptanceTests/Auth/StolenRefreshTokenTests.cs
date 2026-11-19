@@ -75,15 +75,18 @@ public sealed class StolenRefreshTokenTests(PostgresFixture db) : AcceptanceTest
         foreach (var loser in responses.Where(r => r.StatusCode != HttpStatusCode.OK))
             await loser.AssertProblemAsync(HttpStatusCode.Unauthorized, ErrorCodes.InvalidRefreshToken);
 
-        // …and the whole session is dead: neither the raced token nor the winner's new token refreshes any more.
-        var raced = await RefreshAsync(token);
-        await raced.AssertProblemAsync(HttpStatusCode.Unauthorized, ErrorCodes.InvalidRefreshToken);
+        // …and the whole session is dead.
         if (winners.Count == 1)
         {
+            // The losing request alone must have ended the session: the winner's new token is checked first,
+            // before anything else touches the family.
             var won = await ApiClient.ReadAsync<AuthResponse>(winners[0]);
             var afterWin = await RefreshAsync(won.RefreshToken);
             await afterWin.AssertProblemAsync(HttpStatusCode.Unauthorized, ErrorCodes.InvalidRefreshToken);
         }
+
+        var raced = await RefreshAsync(token);
+        await raced.AssertProblemAsync(HttpStatusCode.Unauthorized, ErrorCodes.InvalidRefreshToken);
     }
 
     private async Task<HttpResponseMessage> RefreshAsync(string refreshToken)
