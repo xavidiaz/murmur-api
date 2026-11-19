@@ -1,4 +1,5 @@
 using Application.Auth;
+using Application.Invites;
 using Application.Servers;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,6 +17,7 @@ public static class DependencyInjection
         services.AddScoped<CreateServer>();
         services.AddScoped<GetMyServers>();
         services.AddScoped<GetServer>();
+        services.AddScoped<CreateInvite>();
         return services;
     }
 }

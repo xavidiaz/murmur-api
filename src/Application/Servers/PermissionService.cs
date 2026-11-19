@@ -12,14 +12,23 @@ public static class PermissionService
     public static readonly Permissions All =
         Enum.GetValues<Permissions>().Aggregate(Permissions.None, (all, p) => all | p);
 
-    public static Permissions EffectivePermissions(Server server, Guid userId)
-    {
-        if (server.OwnerId == userId)
-            return All;
-        if (server.Members.All(m => m.UserId != userId))
-            return Permissions.None;
+    public static Permissions EffectivePermissions(Server server, Guid userId) =>
+        EffectivePermissions(
+            server.OwnerId,
+            server.Roles.Single(r => r.IsEveryone).Permissions,
+            isMember: server.Members.Any(m => m.UserId == userId),
+            userId);
 
-        var permissions = server.Roles.Single(r => r.IsEveryone).Permissions;
-        return permissions.HasFlag(Permissions.Administrator) ? All : permissions;
+    /// <summary>For a member, from a <see cref="ServerAccess"/> read model.</summary>
+    public static Permissions EffectivePermissions(ServerAccess access, Guid userId) =>
+        EffectivePermissions(access.OwnerId, access.EveryonePermissions, isMember: true, userId);
+
+    private static Permissions EffectivePermissions(Guid ownerId, Permissions everyone, bool isMember, Guid userId)
+    {
+        if (ownerId == userId)
+            return All;
+        if (!isMember)
+            return Permissions.None;
+        return everyone.HasFlag(Permissions.Administrator) ? All : everyone;
     }
 }

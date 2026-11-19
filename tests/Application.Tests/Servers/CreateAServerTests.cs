@@ -26,6 +26,18 @@ internal sealed class FakeServerRepository : IServerRepository
 
     public Task<DomainServer?> FindForMemberAsync(Guid serverId, Guid userId, CancellationToken ct) =>
         Task.FromResult(Added.SingleOrDefault(s => s.Id == serverId && s.Members.Any(m => m.UserId == userId)));
+
+    /// <summary>Access rows set directly by a test (e.g. a member whose @everyone lacks a permission).</summary>
+    public Dictionary<(Guid ServerId, Guid UserId), ServerAccess> AccessOverrides { get; } = [];
+
+    public Task<ServerAccess?> GetAccessAsync(Guid serverId, Guid userId, CancellationToken ct)
+    {
+        if (AccessOverrides.TryGetValue((serverId, userId), out var overridden))
+            return Task.FromResult<ServerAccess?>(overridden);
+        var server = Added.SingleOrDefault(s => s.Id == serverId && s.Members.Any(m => m.UserId == userId));
+        return Task.FromResult(server is null ? null : new ServerAccess(server.Id, server.Name, server.IconUrl, server.OwnerId,
+            server.Roles.Single(r => r.IsEveryone).Permissions, server.Members.Count));
+    }
 }
 
 /// <summary>Create a server — API-SRV-02: the use case, with the repository faked.</summary>
