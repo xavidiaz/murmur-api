@@ -87,8 +87,10 @@ public sealed class StolenRefreshTokenTests(TestDatabase database) : IClassFixtu
     public async Task Reuse_racing_a_rotation_of_the_newest_token_still_ends_the_whole_session()
     {
         // Reuse of R1 (which revokes the family) races a legitimate rotation R2 → R3. Whatever the interleaving,
-        // no token of the family may survive: R3 must not slip past the revocation.
-        for (var round = 0; round < 25; round++)
+        // no token of the family may survive: R3 must not slip past the revocation. The reuse's start is staggered
+        // (0–4 ms in 100 µs steps) so that some rounds land it inside the rotation's window between retiring R2 and
+        // committing R3, the window the family lock closes; the test can't pass by lucky timing.
+        for (var round = 0; round < 40; round++)
         {
             // Given
             var r1 = await SignInAsync(await NewUserAsync());
@@ -100,7 +102,12 @@ public sealed class StolenRefreshTokenTests(TestDatabase database) : IClassFixtu
             // When
             using var start = new Barrier(2);
             await Task.WhenAll(
-                Task.Run(async () => { start.SignalAndWait(Ct); return await new TokenService(contexts[0], _clock, Jwt).RotateRefreshTokenAsync(r1, Ct); }, Ct),
+                Task.Run(async () =>
+                {
+                    start.SignalAndWait(Ct);
+                    SpinFor(TimeSpan.FromMicroseconds(100 * round));
+                    return await new TokenService(contexts[0], _clock, Jwt).RotateRefreshTokenAsync(r1, Ct);
+                }, Ct),
                 Task.Run(async () => { start.SignalAndWait(Ct); return await new TokenService(contexts[1], _clock, Jwt).RotateRefreshTokenAsync(r2, Ct); }, Ct));
             foreach (var context in contexts)
                 await context.DisposeAsync();
@@ -110,5 +117,12 @@ public sealed class StolenRefreshTokenTests(TestDatabase database) : IClassFixtu
             Assert.True(family.All(t => t.RevokedAt is not null),
                 $"round {round}: {family.Count(t => t.RevokedAt is null)} live token(s) survived the reuse");
         }
+    }
+
+    private static void SpinFor(TimeSpan duration)
+    {
+        var until = System.Diagnostics.Stopwatch.GetTimestamp() + (long)(duration.TotalSeconds * System.Diagnostics.Stopwatch.Frequency);
+        while (System.Diagnostics.Stopwatch.GetTimestamp() < until)
+            Thread.SpinWait(20);
     }
 }

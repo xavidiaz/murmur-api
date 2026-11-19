@@ -8,7 +8,7 @@ This repository is the API. The web client lives in [murmur-web](https://github.
 
 ## Project status
 
-**Milestone 1: 6 / 47 API stories done**
+**Milestone 1: 7 / 47 API stories done**
 
 Legend: ✅ done (links to the merged PR) · 🚧 in progress (links to the issue) · ⬜ not started
 
@@ -25,7 +25,7 @@ Each story's PR updates its row here and the progress line above.
 | Staying signed in | `API-AUTH-05` | ✅ [#8](https://github.com/xavidiaz/murmur-api/pull/8) |
 | A stolen refresh token is useless | `API-AUTH-06` | ✅ [#11](https://github.com/xavidiaz/murmur-api/pull/11) |
 | Sign out | `API-AUTH-07` | ✅ [#13](https://github.com/xavidiaz/murmur-api/pull/13) |
-| Tokens expire | `API-AUTH-08` | ⬜ |
+| Tokens expire | `API-AUTH-08` | ✅ [#15](https://github.com/xavidiaz/murmur-api/pull/15) |
 
 ### Servers and members
 
