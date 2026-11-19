@@ -1,6 +1,7 @@
 using Contracts;
 using Infrastructure.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -56,7 +57,10 @@ internal static class JwtBearerSetup
                 };
             });
 
-        services.AddAuthorization();
+        // Secure by default: every endpoint requires a signed-in user unless it is explicitly .AllowAnonymous().
+        // The public endpoints are pinned by a test (Api.Tests › PublicEndpointsTests).
+        services.AddAuthorization(options => options.FallbackPolicy =
+            new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
         return services;
     }
 }

@@ -40,6 +40,27 @@ internal sealed class FakeInviteRepository : IInviteRepository
         PreviewLookups.Add(code);
         return Task.FromResult(Previews.GetValueOrDefault(code));
     }
+
+    /// <summary>Join targets served by <see cref="FindForJoinAsync"/>; a test may queue a different answer for the re-read.</summary>
+    public Dictionary<string, Queue<JoinTarget>> JoinTargets { get; } = new(StringComparer.Ordinal);
+    public List<string> JoinLookups { get; } = [];
+
+    public Task<JoinTarget?> FindForJoinAsync(string code, Guid userId, CancellationToken ct)
+    {
+        JoinLookups.Add(code);
+        if (!JoinTargets.TryGetValue(code, out var queue) || queue.Count == 0)
+            return Task.FromResult<JoinTarget?>(null);
+        return Task.FromResult<JoinTarget?>(queue.Count > 1 ? queue.Dequeue() : queue.Peek());
+    }
+
+    public RedeemOutcome NextRedeemOutcome { get; set; } = RedeemOutcome.Joined;
+    public List<(string Code, Domain.Servers.ServerMember Member, DateTimeOffset Now)> Redeems { get; } = [];
+
+    public Task<RedeemOutcome> TryRedeemAsync(string code, Domain.Servers.ServerMember member, DateTimeOffset now, CancellationToken ct)
+    {
+        Redeems.Add((code, member, now));
+        return Task.FromResult(NextRedeemOutcome);
+    }
 }
 
 /// <summary>Create an invite — API-INV-02: the use case, with repositories faked.</summary>

@@ -14,6 +14,9 @@ public sealed class ServerMember
         JoinedAt = joinedAt;
     }
 
+    /// <summary>A new membership for someone joining a server (e.g. with an invite). <paramref name="joinedAt"/> comes from the caller's clock.</summary>
+    public static ServerMember Join(Guid serverId, Guid userId, DateTimeOffset joinedAt) => new(serverId, userId, joinedAt);
+
     public Guid ServerId { get; private set; }
     public Guid UserId { get; private set; }
     public string? Nickname { get; private set; }

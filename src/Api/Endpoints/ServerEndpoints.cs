@@ -11,7 +11,7 @@ internal static class ServerEndpoints
 {
     public static IEndpointRouteBuilder MapServerEndpoints(this IEndpointRouteBuilder app)
     {
-        var servers = app.MapGroup("").WithTags("Servers").RequireAuthorization();
+        var servers = app.MapGroup("").WithTags("Servers"); // signed-in only (the fallback policy)
 
         servers.MapPost(ApiRoutes.Servers.Collection, CreateAsync);
         servers.MapGet(ApiRoutes.Servers.Collection, ListMineAsync);

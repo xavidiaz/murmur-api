@@ -3,6 +3,7 @@ using Api.Errors;
 using Application.Invites;
 using Contracts;
 using Contracts.Invites;
+using Contracts.Servers;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Api.Endpoints;
@@ -13,11 +14,22 @@ internal static class InviteEndpoints
     {
         var invites = app.MapGroup("").WithTags("Invites");
 
-        invites.MapPost(ApiRoutes.Servers.Collection + "/{serverId:guid}/invites", CreateAsync).RequireAuthorization();
+        invites.MapPost(ApiRoutes.Servers.Collection + "/{serverId:guid}/invites", CreateAsync);
         // Anonymous on purpose: people follow an invite link before they have an account.
         invites.MapGet(ApiRoutes.Base + "/invites/{code}", PreviewAsync).AllowAnonymous();
+        invites.MapPost(ApiRoutes.Base + "/invites/{code}/accept", AcceptAsync);
 
         return app;
+    }
+
+    private static async Task<Results<Ok<ServerDto>, ProblemHttpResult, UnauthorizedHttpResult>> AcceptAsync(
+        string code, HttpContext http, AcceptInvite acceptInvite, CancellationToken ct)
+    {
+        if (http.User.UserId() is not { } userId)
+            return TypedResults.Unauthorized();
+
+        var result = await acceptInvite.HandleAsync(userId, code, ct);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
     }
 
     private static async Task<Results<Ok<InviteDto>, ProblemHttpResult>> PreviewAsync(

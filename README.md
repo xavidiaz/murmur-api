@@ -8,7 +8,7 @@ This repository is the API. The web client lives in [murmur-web](https://github.
 
 ## Project status
 
-**Milestone 1: 14 / 47 API stories done**
+**Milestone 1: 15 / 47 API stories done**
 
 In progress: [open story issues](https://github.com/xavidiaz/murmur-api/issues?q=is%3Aissue+is%3Aopen+label%3Astory)
 
@@ -58,7 +58,7 @@ Each story's PR updates its row here and the progress line above.
 | Invite rules | `API-INV-01` | ✅ [#26](https://github.com/xavidiaz/murmur-api/pull/26) |
 | Create an invite | `API-INV-02` | ✅ [#28](https://github.com/xavidiaz/murmur-api/pull/28) |
 | Preview an invite | `API-INV-03` | ✅ [#30](https://github.com/xavidiaz/murmur-api/pull/30) |
-| Join with an invite | `API-INV-04` | ⬜ |
+| Join with an invite | `API-INV-04` | ✅ [#32](https://github.com/xavidiaz/murmur-api/pull/32) |
 | A single-use invite really is single-use | `API-INV-05` | ⬜ |
 
 ### Roles and permissions
@@ -126,6 +126,7 @@ tests/
   Domain.Tests/          # unit tests
   Application.Tests/     # unit tests (ports faked)
   Infrastructure.Tests/  # persistence tests against a throwaway PostgreSQL schema
+  Api.Tests/             # host-level checks without a database (e.g. which endpoints are public)
   Api.AcceptanceTests/   # black-box HTTP + SignalR tests against the real API
 ```
 
