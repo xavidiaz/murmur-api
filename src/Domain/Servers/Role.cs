@@ -3,6 +3,7 @@ namespace Domain.Servers;
 /// <summary>A named set of permissions within a server. Every server has exactly one <c>@everyone</c> role at position 0.</summary>
 public sealed class Role
 {
+    public const int NameMaxLength = 100;
     public const string EveryoneName = "@everyone";
     public const Permissions EveryoneDefaultPermissions =
         Permissions.ViewChannel | Permissions.SendMessages | Permissions.CreateInvite;
