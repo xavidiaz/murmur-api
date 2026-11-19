@@ -34,4 +34,14 @@ public sealed class ServerRepository(AppDbContext db) : IServerRepository
             .Include(s => s.Channels)
             .Include(s => s.Members.Where(m => m.UserId == userId))
             .SingleOrDefaultAsync(ct);
+
+    /// <summary>One query: the server row filtered on membership, its @everyone permissions and a COUNT of members.</summary>
+    public Task<ServerAccess?> GetAccessAsync(Guid serverId, Guid userId, CancellationToken ct) =>
+        db.Servers
+            .Where(s => s.Id == serverId && s.Members.Any(m => m.UserId == userId))
+            .Select(s => new ServerAccess(
+                s.Id, s.Name, s.IconUrl, s.OwnerId,
+                s.Roles.Where(r => r.IsEveryone).Select(r => r.Permissions).Single(),
+                s.Members.Count()))
+            .SingleOrDefaultAsync(ct);
 }

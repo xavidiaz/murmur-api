@@ -1,4 +1,5 @@
 using Application.Auth;
+using Application.Invites;
 using Application.Servers;
 using Infrastructure.Auth;
 using Infrastructure.Identity;
@@ -51,6 +52,7 @@ public static class DependencyInjection
         services.AddScoped<IUserAccounts, UserAccounts>();
         services.AddScoped<ITokenIssuer, TokenService>();
         services.AddScoped<IServerRepository, ServerRepository>();
+        services.AddScoped<IInviteRepository, InviteRepository>();
         return services;
     }
 
