@@ -22,6 +22,16 @@ public sealed class Server
     public IReadOnlyCollection<Role> Roles => _roles.AsReadOnly();
     public IReadOnlyCollection<Channel> Channels => _channels.AsReadOnly();
 
+    /// <summary>Adds <paramref name="userId"/> as a member (or returns the existing membership).</summary>
+    public ServerMember AddMember(Guid userId, DateTimeOffset joinedAt) => throw new NotImplementedException();
+
+    /// <summary>A new role at the bottom of the list (minimal; API-ROLE-02 adds its rules).</summary>
+    public Role CreateRole(string name, Permissions permissions, int? color, DateTimeOffset now) => throw new NotImplementedException();
+
+    public RoleAssignmentOutcome AssignRole(Guid userId, Guid roleId) => throw new NotImplementedException();
+
+    public RoleAssignmentOutcome UnassignRole(Guid userId, Guid roleId) => throw new NotImplementedException();
+
     /// <summary>Server names are stored trimmed.</summary>
     public static string NormalizeName(string name) => name.Trim();
 

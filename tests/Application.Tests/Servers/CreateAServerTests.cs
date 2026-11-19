@@ -36,7 +36,7 @@ internal sealed class FakeServerRepository : IServerRepository
             return Task.FromResult<ServerAccess?>(overridden);
         var server = Added.SingleOrDefault(s => s.Id == serverId && s.Members.Any(m => m.UserId == userId));
         return Task.FromResult(server is null ? null : new ServerAccess(server.Id, server.Name, server.IconUrl, server.OwnerId,
-            server.Roles.Single(r => r.IsEveryone).Permissions, server.Members.Count));
+            server.Roles.Single(r => r.IsEveryone).Permissions, [], server.Members.Count));
     }
 }
 

@@ -21,4 +21,7 @@ public sealed class ServerMember
     public Guid UserId { get; private set; }
     public string? Nickname { get; private set; }
     public DateTimeOffset JoinedAt { get; private set; }
+
+    /// <summary>The roles this member holds, excluding <c>@everyone</c>.</summary>
+    public IReadOnlyCollection<Guid> RoleIds => throw new NotImplementedException();
 }

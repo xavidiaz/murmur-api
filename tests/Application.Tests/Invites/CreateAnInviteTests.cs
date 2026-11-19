@@ -192,7 +192,7 @@ public sealed class CreateAnInviteTests
         var server = await ServerAsync();
         var member = Guid.CreateVersion7();
         _servers.AccessOverrides[(server.Id, member)] = new ServerAccess(server.Id, server.Name, server.IconUrl, _owner,
-            DomainPermissions.ViewChannel | DomainPermissions.SendMessages, MemberCount: 2);
+            DomainPermissions.ViewChannel | DomainPermissions.SendMessages, [], MemberCount: 2);
 
         // When
         var result = await CreateAsync(server.Id, as_: member);

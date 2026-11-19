@@ -42,6 +42,7 @@ public sealed class ServerRepository(AppDbContext db) : IServerRepository
             .Select(s => new ServerAccess(
                 s.Id, s.Name, s.IconUrl, s.OwnerId,
                 s.Roles.Where(r => r.IsEveryone).Select(r => r.Permissions).Single(),
+                new List<Domain.Servers.Permissions>(),
                 s.Members.Count()))
             .SingleOrDefaultAsync(ct);
 }

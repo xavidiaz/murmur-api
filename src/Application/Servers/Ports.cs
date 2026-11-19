@@ -9,7 +9,8 @@ public sealed record ServerSummary(Guid Id, string Name, string? IconUrl, Guid O
 /// What a member needs to know to act in a server, read in one query without loading the aggregate.
 /// <see cref="MemberCount"/> is counted by the database.
 /// </summary>
-public sealed record ServerAccess(Guid ServerId, string Name, string? IconUrl, Guid OwnerId, Permissions EveryonePermissions, int MemberCount);
+public sealed record ServerAccess(Guid ServerId, string Name, string? IconUrl, Guid OwnerId, Permissions EveryonePermissions,
+    IReadOnlyList<Permissions> MemberRolePermissions, int MemberCount);
 
 /// <summary>Port: persistence for the <see cref="Server"/> aggregate.</summary>
 public interface IServerRepository

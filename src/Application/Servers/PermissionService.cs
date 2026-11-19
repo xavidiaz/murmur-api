@@ -23,6 +23,10 @@ public static class PermissionService
     public static Permissions EffectivePermissions(ServerAccess access, Guid userId) =>
         EffectivePermissions(access.OwnerId, access.EveryonePermissions, isMember: true, userId);
 
+    /// <summary>The single rule: what <paramref name="userId"/> may do, given everything that decides it.</summary>
+    public static Permissions Compute(Guid ownerId, Guid userId, bool isMember, Permissions everyone,
+        IEnumerable<Permissions> memberRolePermissions) => throw new NotImplementedException();
+
     private static Permissions EffectivePermissions(Guid ownerId, Permissions everyone, bool isMember, Guid userId)
     {
         if (ownerId == userId)
