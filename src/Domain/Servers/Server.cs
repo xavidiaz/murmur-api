@@ -22,15 +22,47 @@ public sealed class Server
     public IReadOnlyCollection<Role> Roles => _roles.AsReadOnly();
     public IReadOnlyCollection<Channel> Channels => _channels.AsReadOnly();
 
-    /// <summary>Adds <paramref name="userId"/> as a member (or returns the existing membership).</summary>
-    public ServerMember AddMember(Guid userId, DateTimeOffset joinedAt) => throw new NotImplementedException();
+    /// <summary>Adds <paramref name="userId"/> as a member (or returns the existing membership unchanged).</summary>
+    public ServerMember AddMember(Guid userId, DateTimeOffset joinedAt)
+    {
+        if (_members.FirstOrDefault(m => m.UserId == userId) is { } existing)
+            return existing;
+        var member = ServerMember.Join(Id, userId, joinedAt);
+        _members.Add(member);
+        return member;
+    }
 
-    /// <summary>A new role at the bottom of the list (minimal; API-ROLE-02 adds its rules).</summary>
-    public Role CreateRole(string name, Permissions permissions, int? color, DateTimeOffset now) => throw new NotImplementedException();
+    /// <summary>
+    /// A new role below the existing ones. Minimal for now; API-ROLE-02 adds its validation and hierarchy rules.
+    /// </summary>
+    public Role CreateRole(string name, Permissions permissions, int? color, DateTimeOffset now)
+    {
+        var role = Role.Create(Id, name, permissions, color, position: _roles.Max(r => r.Position) + 1, now);
+        _roles.Add(role);
+        return role;
+    }
 
-    public RoleAssignmentOutcome AssignRole(Guid userId, Guid roleId) => throw new NotImplementedException();
+    /// <summary>
+    /// Gives a member one of this server's roles. Refused for non-members, for roles that aren't this server's, and for
+    /// <c>@everyone</c> (every member has it implicitly).
+    /// </summary>
+    public RoleAssignmentOutcome AssignRole(Guid userId, Guid roleId) =>
+        CheckAssignment(userId, roleId, out var member) ?? (member!.Assign(roleId) ? RoleAssignmentOutcome.Done : RoleAssignmentOutcome.NoChange);
 
-    public RoleAssignmentOutcome UnassignRole(Guid userId, Guid roleId) => throw new NotImplementedException();
+    /// <summary>Takes a role away from a member; the same refusals as <see cref="AssignRole"/>.</summary>
+    public RoleAssignmentOutcome UnassignRole(Guid userId, Guid roleId) =>
+        CheckAssignment(userId, roleId, out var member) ?? (member!.Unassign(roleId) ? RoleAssignmentOutcome.Done : RoleAssignmentOutcome.NoChange);
+
+    private RoleAssignmentOutcome? CheckAssignment(Guid userId, Guid roleId, out ServerMember? member)
+    {
+        member = _members.FirstOrDefault(m => m.UserId == userId);
+        if (member is null)
+            return RoleAssignmentOutcome.UnknownMember;
+        var role = _roles.FirstOrDefault(r => r.Id == roleId);
+        if (role is null)
+            return RoleAssignmentOutcome.UnknownRole;
+        return role.IsEveryone ? RoleAssignmentOutcome.EveryoneRole : null;
+    }
 
     /// <summary>Server names are stored trimmed.</summary>
     public static string NormalizeName(string name) => name.Trim();

@@ -18,6 +18,21 @@ public sealed class Role
     public Permissions Permissions { get; private set; }
     public bool IsEveryone { get; private set; }
 
+    internal static Role Create(Guid serverId, string name, Permissions permissions, int? color, int position, DateTimeOffset now)
+    {
+        if (string.IsNullOrWhiteSpace(name) || name.Trim().Length > NameMaxLength)
+            throw new ArgumentException($"A role name must be 1–{NameMaxLength} characters once trimmed.", nameof(name));
+        return new Role
+        {
+            Id = Guid.CreateVersion7(now),
+            ServerId = serverId,
+            Name = name.Trim(),
+            Color = color,
+            Position = position,
+            Permissions = permissions,
+        };
+    }
+
     internal static Role CreateEveryone(Guid serverId, DateTimeOffset now) => new()
     {
         Id = Guid.CreateVersion7(now),

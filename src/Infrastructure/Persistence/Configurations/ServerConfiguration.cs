@@ -38,6 +38,24 @@ internal sealed class ServerMemberConfiguration : IEntityTypeConfiguration<Serve
         member.Property(m => m.Nickname).HasMaxLength(ServerMember.NicknameMaxLength);
         member.HasOne<ApplicationUser>().WithMany().HasForeignKey(m => m.UserId).OnDelete(DeleteBehavior.Cascade);
         member.HasIndex(m => m.UserId); // "my servers"
+        member.Ignore(m => m.RoleIds);   // derived from RoleAssignments
+
+        member.HasMany(m => m.RoleAssignments).WithOne()
+            .HasForeignKey(a => new { a.ServerId, a.UserId })
+            .OnDelete(DeleteBehavior.Cascade); // leaving/removal drops the member's roles
+        member.Navigation(m => m.RoleAssignments).UsePropertyAccessMode(PropertyAccessMode.Field);
+    }
+}
+
+internal sealed class MemberRoleConfiguration : IEntityTypeConfiguration<MemberRole>
+{
+    public void Configure(EntityTypeBuilder<MemberRole> assignment)
+    {
+        assignment.ToTable("MemberRoles");
+        assignment.HasKey(a => new { a.ServerId, a.UserId, a.RoleId });
+        // Deleting a role takes it away from everyone who held it.
+        assignment.HasOne<Role>().WithMany().HasForeignKey(a => a.RoleId).OnDelete(DeleteBehavior.Cascade);
+        assignment.HasIndex(a => a.RoleId);
     }
 }
 
