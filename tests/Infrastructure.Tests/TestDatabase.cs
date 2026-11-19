@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Npgsql;
 using Xunit;
 
@@ -52,11 +53,14 @@ public sealed class TestDatabase : IAsyncLifetime
     }
 
     /// <summary>A new context on the throwaway database; skips the test when no server is configured.</summary>
-    public AppDbContext CreateContext()
+    public AppDbContext CreateContext(params IInterceptor[] interceptors)
     {
         if (_connectionString is null)
             Assert.Skip(SkipReason);
-        return new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseNpgsql(_connectionString).Options);
+        return new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
+            .UseNpgsql(_connectionString)
+            .AddInterceptors(interceptors)
+            .Options);
     }
 
     public async ValueTask DisposeAsync()

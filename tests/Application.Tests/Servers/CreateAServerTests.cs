@@ -17,6 +17,15 @@ internal sealed class FakeServerRepository : IServerRepository
         Added.Add(server);
         return Task.CompletedTask;
     }
+
+    public Task<IReadOnlyList<ServerSummary>> ListForMemberAsync(Guid userId, CancellationToken ct) =>
+        Task.FromResult<IReadOnlyList<ServerSummary>>([.. Added
+            .Where(s => s.Members.Any(m => m.UserId == userId))
+            .OrderBy(s => s.Id)
+            .Select(s => new ServerSummary(s.Id, s.Name, s.IconUrl, s.OwnerId))]);
+
+    public Task<DomainServer?> FindForMemberAsync(Guid serverId, Guid userId, CancellationToken ct) =>
+        Task.FromResult(Added.SingleOrDefault(s => s.Id == serverId && s.Members.Any(m => m.UserId == userId)));
 }
 
 /// <summary>Create a server — API-SRV-02: the use case, with the repository faked.</summary>
