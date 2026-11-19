@@ -35,4 +35,16 @@ public interface IServerRepository
     /// user isn't a member (indistinguishable, as with <see cref="FindForMemberAsync"/>).
     /// </summary>
     Task<ServerAccess?> GetAccessAsync(Guid serverId, Guid userId, CancellationToken ct);
+
+    /// <summary>
+    /// The <b>whole</b> aggregate (members with their roles, roles, channels), tracked, for a write; null when there's
+    /// no such server. Save with <see cref="SaveChangesAsync"/>.
+    /// </summary>
+    Task<Server?> LoadAsync(Guid serverId, CancellationToken ct);
+
+    /// <summary>Saves the changes made to aggregates loaded with <see cref="LoadAsync"/>.</summary>
+    Task SaveChangesAsync(CancellationToken ct);
+
+    /// <summary>The server's roles ordered by position, in one query; null when it doesn't exist or the user isn't a member.</summary>
+    Task<IReadOnlyList<Role>?> ListRolesForMemberAsync(Guid serverId, Guid userId, CancellationToken ct);
 }

@@ -32,14 +32,92 @@ public sealed class Server
         return member;
     }
 
-    /// <summary>
-    /// A new role below the existing ones. Minimal for now; API-ROLE-02 adds its validation and hierarchy rules.
-    /// </summary>
+    /// <summary>A new role on top of the existing ones (Position = highest + 1). Name, colour and permissions are checked.</summary>
+    /// <exception cref="ArgumentException">An invalid name, colour or permission set (see <see cref="Role"/>'s rules).</exception>
     public Role CreateRole(string name, Permissions permissions, int? color, DateTimeOffset now)
     {
         var role = Role.Create(Id, name, permissions, color, position: _roles.Max(r => r.Position) + 1, now);
         _roles.Add(role);
         return role;
+    }
+
+    /// <summary>
+    /// Changes a role; null leaves a field unchanged. <c>@everyone</c> can't be renamed (its colour and permissions can
+    /// change). Refusals change nothing.
+    /// </summary>
+    /// <exception cref="ArgumentException">An invalid name, colour or permission set.</exception>
+    public RoleChangeOutcome UpdateRole(Guid roleId, string? name, int? color, Permissions? permissions)
+    {
+        var role = _roles.FirstOrDefault(r => r.Id == roleId);
+        if (role is null)
+            return RoleChangeOutcome.UnknownRole;
+        if (role.IsEveryone && name is not null)
+            return RoleChangeOutcome.EveryoneRoleImmutable;
+
+        // Check everything before changing anything, so an invalid value leaves the role untouched.
+        if (name is not null && !Role.IsValidName(Role.NormalizeName(name)))
+            throw new ArgumentException("Invalid role name.", nameof(name));
+        if (!Role.IsValidColor(color))
+            throw new ArgumentOutOfRangeException(nameof(color), color, "A colour must be an RGB value.");
+        if (permissions is { } p && !Role.IsValidPermissions(p))
+            throw new ArgumentOutOfRangeException(nameof(permissions), permissions, "Unknown permission flags.");
+
+        if (name is not null)
+            role.Rename(name);
+        if (color is not null)
+            role.ChangeColor(color);
+        if (permissions is { } newPermissions)
+            role.ChangePermissions(newPermissions);
+        return RoleChangeOutcome.Done;
+    }
+
+    /// <summary>Whether <paramref name="position"/> is somewhere a role can move to: 1 up to the number of roles besides <c>@everyone</c>.</summary>
+    public bool IsValidRolePosition(int position) => position >= 1 && position <= _roles.Count(r => !r.IsEveryone);
+
+    /// <summary>
+    /// Moves a role to <paramref name="position"/> (1..number of roles besides <c>@everyone</c>), renumbering the
+    /// others so positions stay 0 (<c>@everyone</c>), 1, 2, … without gaps. <c>@everyone</c> doesn't move.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The position is outside 1..number of roles.</exception>
+    public RoleChangeOutcome MoveRole(Guid roleId, int position)
+    {
+        var role = _roles.FirstOrDefault(r => r.Id == roleId);
+        if (role is null)
+            return RoleChangeOutcome.UnknownRole;
+        if (role.IsEveryone)
+            return RoleChangeOutcome.EveryoneRoleImmutable;
+        if (!IsValidRolePosition(position))
+            throw new ArgumentOutOfRangeException(nameof(position), position, "Not a position a role can move to.");
+
+        var ordered = _roles.Where(r => !r.IsEveryone && r != role).OrderBy(r => r.Position).ToList();
+        ordered.Insert(position - 1, role);
+        Renumber(ordered);
+        return RoleChangeOutcome.Done;
+    }
+
+    /// <summary>
+    /// Deletes a role: its holders lose it, and the roles above it move down to close the gap. <c>@everyone</c> can't
+    /// be deleted.
+    /// </summary>
+    public RoleChangeOutcome DeleteRole(Guid roleId)
+    {
+        var role = _roles.FirstOrDefault(r => r.Id == roleId);
+        if (role is null)
+            return RoleChangeOutcome.UnknownRole;
+        if (role.IsEveryone)
+            return RoleChangeOutcome.EveryoneRoleImmutable;
+
+        foreach (var member in _members)
+            member.Unassign(roleId);
+        _roles.Remove(role);
+        Renumber([.. _roles.Where(r => !r.IsEveryone).OrderBy(r => r.Position)]);
+        return RoleChangeOutcome.Done;
+    }
+
+    private static void Renumber(IReadOnlyList<Role> rolesAboveEveryone)
+    {
+        for (var i = 0; i < rolesAboveEveryone.Count; i++)
+            rolesAboveEveryone[i].MoveTo(i + 1);
     }
 
     /// <summary>

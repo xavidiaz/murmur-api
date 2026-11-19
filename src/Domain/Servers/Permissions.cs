@@ -16,3 +16,10 @@ public enum Permissions : long
     CreateInvite   = 1 << 5,
     Administrator  = 1 << 6,
 }
+
+public static class PermissionFlags
+{
+    /// <summary>Every defined flag.</summary>
+    public static readonly Permissions All =
+        Enum.GetValues<Permissions>().Aggregate(Permissions.None, (all, p) => all | p);
+}

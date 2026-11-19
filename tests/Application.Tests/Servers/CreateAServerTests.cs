@@ -27,6 +27,23 @@ internal sealed class FakeServerRepository : IServerRepository
     public Task<DomainServer?> FindForMemberAsync(Guid serverId, Guid userId, CancellationToken ct) =>
         Task.FromResult(Added.SingleOrDefault(s => s.Id == serverId && s.Members.Any(m => m.UserId == userId)));
 
+    public int Saves { get; private set; }
+
+    public Task<DomainServer?> LoadAsync(Guid serverId, CancellationToken ct) =>
+        Task.FromResult(Added.SingleOrDefault(s => s.Id == serverId));
+
+    public Task SaveChangesAsync(CancellationToken ct)
+    {
+        Saves++;
+        return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<Domain.Servers.Role>?> ListRolesForMemberAsync(Guid serverId, Guid userId, CancellationToken ct)
+    {
+        var server = Added.SingleOrDefault(s => s.Id == serverId && s.Members.Any(m => m.UserId == userId));
+        return Task.FromResult<IReadOnlyList<Domain.Servers.Role>?>(server is null ? null : [.. server.Roles.OrderBy(r => r.Position)]);
+    }
+
     /// <summary>Access rows set directly by a test (e.g. a member whose @everyone lacks a permission).</summary>
     public Dictionary<(Guid ServerId, Guid UserId), ServerAccess> AccessOverrides { get; } = [];
 
