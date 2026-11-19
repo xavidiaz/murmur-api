@@ -21,6 +21,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapAuthEndpoints();
+app.MapServerEndpoints();
 
 app.Run();
 

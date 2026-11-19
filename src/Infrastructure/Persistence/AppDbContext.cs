@@ -1,3 +1,4 @@
+using Domain.Servers;
 using Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     : IdentityUserContext<ApplicationUser, Guid>(options)
 {
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<Server> Servers => Set<Server>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

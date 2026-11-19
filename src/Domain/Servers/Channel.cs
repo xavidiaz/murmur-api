@@ -3,6 +3,8 @@ namespace Domain.Servers;
 /// <summary>A channel within a server.</summary>
 public sealed class Channel
 {
+    public const int NameMaxLength = 100;
+    public const int TopicMaxLength = 1024;
     public const string GeneralName = "general";
 
     private Channel() { } // EF Core

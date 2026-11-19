@@ -1,4 +1,5 @@
 using Application.Auth;
+using Application.Servers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Application;
@@ -12,6 +13,7 @@ public static class DependencyInjection
         services.AddScoped<SignIn>();
         services.AddScoped<RefreshSession>();
         services.AddScoped<SignOut>();
+        services.AddScoped<CreateServer>();
         return services;
     }
 }

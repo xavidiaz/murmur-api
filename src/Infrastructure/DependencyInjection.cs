@@ -1,4 +1,5 @@
 using Application.Auth;
+using Application.Servers;
 using Infrastructure.Auth;
 using Infrastructure.Identity;
 using Infrastructure.Persistence;
@@ -49,6 +50,7 @@ public static class DependencyInjection
 
         services.AddScoped<IUserAccounts, UserAccounts>();
         services.AddScoped<ITokenIssuer, TokenService>();
+        services.AddScoped<IServerRepository, ServerRepository>();
         return services;
     }
 

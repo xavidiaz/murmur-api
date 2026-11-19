@@ -3,6 +3,8 @@ namespace Domain.Servers;
 /// <summary>A user's membership of a server.</summary>
 public sealed class ServerMember
 {
+    public const int NicknameMaxLength = 32;
+
     private ServerMember() { } // EF Core
 
     internal ServerMember(Guid serverId, Guid userId, DateTimeOffset joinedAt)
