@@ -129,7 +129,8 @@ public sealed class StayingSignedInTests(TestDatabase database) : IClassFixture<
         await using var check = database.CreateContext();
         var familyId = (await check.RefreshTokens.SingleAsync(t => t.TokenHash == TokenService.Hash(refreshToken), Ct)).FamilyId;
         var family = await check.RefreshTokens.Where(t => t.FamilyId == familyId).ToListAsync(Ct);
-        Assert.Equal(2, family.Count);                       // the original and exactly one replacement
-        Assert.Single(family, t => t.RevokedAt is null);     // one live token
+        Assert.Equal(2, family.Count); // the original and exactly one replacement
+        // API-AUTH-06 (strict): the losers count as reuse, so the whole family, the winner's new token included, is ended.
+        Assert.All(family, t => Assert.NotNull(t.RevokedAt));
     }
 }

@@ -3,7 +3,7 @@ using Contracts.Auth;
 
 namespace Application.Auth;
 
-/// <summary>Exchanges a refresh token for a new access token and a new refresh token (API-AUTH-05).</summary>
+/// <summary>Exchanges a refresh token for a new access token and a new refresh token (API-AUTH-05); reuse ends the session (API-AUTH-06).</summary>
 public sealed class RefreshSession(IUserAccounts accounts, ITokenIssuer tokens)
 {
     public async Task<Result<AuthResponse>> HandleAsync(RefreshRequest request, CancellationToken ct)
@@ -14,7 +14,8 @@ public sealed class RefreshSession(IUserAccounts accounts, ITokenIssuer tokens)
         var rotation = await tokens.RotateRefreshTokenAsync(request.RefreshToken, ct);
         if (rotation.Token is not { } rotated)
         {
-            // API-AUTH-06 hooks in here: RefreshTokenProblem.AlreadyRotated means reuse → end the whole family.
+            // Every problem gets the same answer. For AlreadyRotated (reuse), the token issuer has already ended the
+            // whole session atomically under its family lock (API-AUTH-06).
             return AuthErrors.InvalidRefreshToken;
         }
 
