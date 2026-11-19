@@ -14,4 +14,8 @@ public static class AuthErrors
     /// </summary>
     public static readonly AppError InvalidCredentials =
         new(ErrorKind.Unauthorized, ErrorCodes.InvalidCredentials, "The username, email or password is incorrect.");
+
+    /// <summary>Used for every unusable refresh token (unknown, expired, revoked, already rotated) alike.</summary>
+    public static readonly AppError InvalidRefreshToken =
+        new(ErrorKind.Unauthorized, ErrorCodes.InvalidRefreshToken, "The refresh token is invalid or has expired.");
 }

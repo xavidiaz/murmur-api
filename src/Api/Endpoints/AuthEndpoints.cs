@@ -16,6 +16,8 @@ internal static class AuthEndpoints
 
         auth.MapPost(ApiRoutes.Auth.Register, RegisterAsync);
         auth.MapPost(ApiRoutes.Auth.Login, LoginAsync);
+        // Anonymous on purpose: the app refreshes once its access token has expired.
+        auth.MapPost(ApiRoutes.Auth.Refresh, RefreshAsync).AllowAnonymous();
         auth.MapGet(ApiRoutes.Auth.Me, MeAsync).RequireAuthorization();
 
         return app;
@@ -34,6 +36,13 @@ internal static class AuthEndpoints
         LoginRequest request, SignIn signIn, CancellationToken ct)
     {
         var result = await signIn.HandleAsync(request, ct);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<Results<Ok<AuthResponse>, ProblemHttpResult>> RefreshAsync(
+        RefreshRequest request, RefreshSession refresh, CancellationToken ct)
+    {
+        var result = await refresh.HandleAsync(request, ct);
         return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
     }
 
