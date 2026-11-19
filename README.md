@@ -8,7 +8,7 @@ This repository is the API. The web client lives in [murmur-web](https://github.
 
 ## Project status
 
-**Milestone 1: 16 / 47 API stories done**
+**Milestone 1: 17 / 47 API stories done**
 
 In progress: [open story issues](https://github.com/xavidiaz/murmur-api/issues?q=is%3Aissue+is%3Aopen+label%3Astory)
 
@@ -65,7 +65,7 @@ Each story's PR updates its row here and the progress line above.
 
 | Story | Tag | Status |
 |---|---|---|
-| Working out what someone may do | `API-ROLE-01` | ⬜ |
+| Working out what someone may do | `API-ROLE-01` | ✅ [#36](https://github.com/xavidiaz/murmur-api/pull/36) |
 | Manage roles | `API-ROLE-02` | ⬜ |
 | Give members roles | `API-ROLE-03` | ⬜ |
 | Moderators can't promote themselves | `API-ROLE-04` | ⬜ |
