@@ -83,4 +83,12 @@ public interface ITokenIssuer
 
     /// <summary>A fresh access token carrying <paramref name="user"/>'s current data.</summary>
     AccessToken CreateAccessToken(UserAccount user);
+
+    /// <summary>
+    /// Signs out: revokes every live token in the session (token family) of <paramref name="refreshToken"/>,
+    /// provided the token belongs to <paramref name="userId"/>. Race-safe against a concurrent refresh of the same
+    /// session. Unknown tokens, other users' tokens and already-ended sessions change nothing. Returns whether
+    /// anything was revoked; callers must not reveal it.
+    /// </summary>
+    Task<bool> EndSessionAsync(Guid userId, string refreshToken, CancellationToken ct);
 }
