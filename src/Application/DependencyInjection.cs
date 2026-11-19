@@ -18,6 +18,7 @@ public static class DependencyInjection
         services.AddScoped<GetMyServers>();
         services.AddScoped<GetServer>();
         services.AddScoped<CreateInvite>();
+        services.AddScoped<PreviewInvite>();
         return services;
     }
 }

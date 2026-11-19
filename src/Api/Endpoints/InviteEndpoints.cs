@@ -14,8 +14,17 @@ internal static class InviteEndpoints
         var invites = app.MapGroup("").WithTags("Invites");
 
         invites.MapPost(ApiRoutes.Servers.Collection + "/{serverId:guid}/invites", CreateAsync).RequireAuthorization();
+        // Anonymous on purpose: people follow an invite link before they have an account.
+        invites.MapGet(ApiRoutes.Base + "/invites/{code}", PreviewAsync).AllowAnonymous();
 
         return app;
+    }
+
+    private static async Task<Results<Ok<InviteDto>, ProblemHttpResult>> PreviewAsync(
+        string code, PreviewInvite previewInvite, CancellationToken ct)
+    {
+        var result = await previewInvite.HandleAsync(code, ct);
+        return result.IsSuccess ? TypedResults.Ok(result.Value) : result.Error.ToProblem();
     }
 
     private static async Task<Results<Created<InviteDto>, ProblemHttpResult, UnauthorizedHttpResult>> CreateAsync(
