@@ -52,8 +52,8 @@ public enum RefreshTokenProblem
     /// <summary>Revoked without being replaced (e.g. signed out, or its session was ended).</summary>
     Revoked,
     /// <summary>
-    /// Already exchanged for a newer token, or lost a race to do so. Presenting it again is the reuse signal
-    /// that API-AUTH-06 answers by ending the whole session (token family).
+    /// Already exchanged for a newer token, or lost a race to do so. That is reuse, so the whole session
+    /// (token family) has been ended (API-AUTH-06).
     /// </summary>
     AlreadyRotated,
 }
@@ -75,7 +75,9 @@ public interface ITokenIssuer
 
     /// <summary>
     /// Exchanges a live refresh token for a new one in the same family. Race-safe: of concurrent calls with the
-    /// same token, at most one succeeds; the others get <see cref="RefreshTokenProblem.AlreadyRotated"/>.
+    /// same token, at most one succeeds. Presenting an already-rotated token, including losing such a race, is reuse:
+    /// it revokes every token of the family, any token a concurrent winner issued included, and returns
+    /// <see cref="RefreshTokenProblem.AlreadyRotated"/>.
     /// </summary>
     Task<RotationResult> RotateRefreshTokenAsync(string refreshToken, CancellationToken ct);
 

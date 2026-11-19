@@ -5,6 +5,7 @@ using Application.Auth;
 using Infrastructure.Identity;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
@@ -28,19 +29,41 @@ public sealed class TokenService(AppDbContext db, TimeProvider clock, IOptions<J
     }
 
     /// <summary>
-    /// Rotates within the token's family. Race-safe: the old token is retired with a conditional
-    /// <c>UPDATE … WHERE Id = x AND RevokedAt IS NULL AND ReplacedByTokenId IS NULL AND ExpiresAt &gt; now</c>
-    /// inside a transaction, and only the caller whose update changed exactly one row inserts the replacement.
-    /// Postgres row locking makes concurrent updaters wait for the winner and then match zero rows.
+    /// Rotates within the token's family, or, if the token was already rotated, ends the whole family
+    /// (API-AUTH-06, strict: a replay and the loser of a race are both reuse).
     /// </summary>
+    /// <remarks>
+    /// <para>Every write to a family (rotation or revocation) runs in a transaction that first takes a per-family
+    /// advisory lock (<c>pg_advisory_xact_lock</c>), and the token is re-read under that lock. So writes to one family
+    /// are serialized and each one sees every earlier write already committed.</para>
+    /// <para>Why the lock is needed: the family revocation is a single <c>UPDATE … WHERE FamilyId = x</c>, and under
+    /// READ COMMITTED it only sees rows that were committed when the statement started. Without the lock, a reuse could
+    /// race a legitimate rotation of the newest token (R2 → R3). The revocation would wait on R2's row lock, find R2
+    /// already retired, and never see R3, so R3 would survive and the thief's session would live on. With the lock,
+    /// the reuse either runs before the rotation, which then finds R2 revoked and refuses, or after it has committed,
+    /// in which case the revocation sees R3.</para>
+    /// <para>In a race between two refreshes of the same token, the loser waits for the lock until the winner has
+    /// committed both the retirement and its new token. It then sees <c>ReplacedByTokenId</c> set and revokes the
+    /// family, including the winner's new token.</para>
+    /// <para>The conditional <c>UPDATE … WHERE Id = x AND RevokedAt IS NULL AND ReplacedByTokenId IS NULL</c>, which must
+    /// change exactly one row, stays as a second line of defence. If it ever changes zero rows, that is also treated
+    /// as reuse.</para>
+    /// </remarks>
     public async Task<RotationResult> RotateRefreshTokenAsync(string refreshToken, CancellationToken ct)
     {
         var hash = Hash(refreshToken);
-        var current = await db.RefreshTokens.AsNoTracking().SingleOrDefaultAsync(t => t.TokenHash == hash, ct);
-        if (current is null)
+        var familyId = await db.RefreshTokens.Where(t => t.TokenHash == hash)
+            .Select(t => (Guid?)t.FamilyId).SingleOrDefaultAsync(ct);
+        if (familyId is not { } family)
             return RotationResult.Refused(RefreshTokenProblem.Unknown);
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        await LockFamilyAsync(family, ct);
+
+        // Re-read under the lock: every earlier rotation/revocation of this family has committed.
+        var current = await db.RefreshTokens.AsNoTracking().SingleAsync(t => t.TokenHash == hash, ct);
         if (current.ReplacedByTokenId is not null)
-            return RotationResult.Refused(RefreshTokenProblem.AlreadyRotated);
+            return await EndFamilyAsync(transaction, family, ct);
         if (current.RevokedAt is not null)
             return RotationResult.Refused(RefreshTokenProblem.Revoked);
 
@@ -48,9 +71,7 @@ public sealed class TokenService(AppDbContext db, TimeProvider clock, IOptions<J
         if (current.ExpiresAt <= now)
             return RotationResult.Refused(RefreshTokenProblem.Expired);
 
-        await using var transaction = await db.Database.BeginTransactionAsync(ct);
-        var (next, nextEntity) = AddRefreshToken(current.UserId, current.FamilyId);
-
+        var (next, nextEntity) = AddRefreshToken(current.UserId, family);
         var retired = await db.RefreshTokens
             .Where(t => t.Id == current.Id && t.RevokedAt == null && t.ReplacedByTokenId == null && t.ExpiresAt > now)
             .ExecuteUpdateAsync(s => s
@@ -58,14 +79,37 @@ public sealed class TokenService(AppDbContext db, TimeProvider clock, IOptions<J
                 .SetProperty(t => t.ReplacedByTokenId, nextEntity.Id), ct);
         if (retired != 1)
         {
-            // Someone else rotated (or revoked) it between our read and our update.
+            // Unreachable while every writer takes the family lock; if it happens anyway, treat it as reuse.
             db.RefreshTokens.Entry(nextEntity).State = EntityState.Detached;
-            return RotationResult.Refused(RefreshTokenProblem.AlreadyRotated);
+            return await EndFamilyAsync(transaction, family, ct);
         }
 
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
         return RotationResult.Rotated(new RotatedRefreshToken(current.UserId, next.Token, next.ExpiresAt));
+    }
+
+    /// <summary>Reuse detected: revoke every live token of the family (under the family lock) and commit.</summary>
+    private async Task<RotationResult> EndFamilyAsync(IDbContextTransaction transaction, Guid familyId, CancellationToken ct)
+    {
+        var now = clock.GetUtcNow();
+        await db.RefreshTokens
+            .Where(t => t.FamilyId == familyId && t.RevokedAt == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAt, now), ct);
+        await transaction.CommitAsync(ct);
+        return RotationResult.Refused(RefreshTokenProblem.AlreadyRotated);
+    }
+
+    /// <summary>
+    /// Serializes writes to one token family until the current transaction ends. Every write to a family must take it.
+    /// Two families whose keys collide just wait for each other briefly.
+    /// </summary>
+    private Task LockFamilyAsync(Guid familyId, CancellationToken ct)
+    {
+        Span<byte> bytes = stackalloc byte[16];
+        familyId.TryWriteBytes(bytes);
+        var key = BitConverter.ToInt64(bytes[..8]) ^ BitConverter.ToInt64(bytes[8..]);
+        return db.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock({key})", ct);
     }
 
     /// <summary>SHA-256 (lowercase hex) of a refresh token, as stored in <see cref="RefreshToken.TokenHash"/>.</summary>
