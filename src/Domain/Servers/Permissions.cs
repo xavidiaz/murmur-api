@@ -1,15 +1,18 @@
 namespace Domain.Servers;
 
-/// <summary>What a role allows. The numeric values match <c>Contracts.Servers.Permissions</c>; map at the Application boundary.</summary>
+/// <summary>
+/// What a role allows. The numeric values match <c>Contracts.Servers.Permissions</c> exactly (enforced by a test);
+/// map between the two at the Application boundary.
+/// </summary>
 [Flags]
 public enum Permissions : long
 {
-    None = 0,
-    ViewChannel = 0,    // stub: values not assigned yet
-    SendMessages = 0,
-    ManageMessages = 0,
-    ManageChannels = 0,
-    ManageServer = 0,
-    CreateInvite = 0,
-    Administrator = 0,
+    None           = 0,
+    ViewChannel    = 1 << 0,
+    SendMessages   = 1 << 1,
+    ManageMessages = 1 << 2,
+    ManageChannels = 1 << 3,
+    ManageServer   = 1 << 4,
+    CreateInvite   = 1 << 5,
+    Administrator  = 1 << 6,
 }
