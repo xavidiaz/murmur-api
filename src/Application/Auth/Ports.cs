@@ -40,9 +40,45 @@ public sealed record IssuedTokens(
     string AccessToken, DateTimeOffset AccessTokenExpiresAt,
     string RefreshToken, DateTimeOffset RefreshTokenExpiresAt);
 
+/// <summary>A signed JWT access token.</summary>
+public sealed record AccessToken(string Token, DateTimeOffset ExpiresAt);
+
+/// <summary>Why a refresh token can't be exchanged.</summary>
+public enum RefreshTokenProblem
+{
+    /// <summary>No such token.</summary>
+    Unknown,
+    Expired,
+    /// <summary>Revoked without being replaced (e.g. signed out, or its session was ended).</summary>
+    Revoked,
+    /// <summary>
+    /// Already exchanged for a newer token, or lost a race to do so. Presenting it again is the reuse signal
+    /// that API-AUTH-06 answers by ending the whole session (token family).
+    /// </summary>
+    AlreadyRotated,
+}
+
+/// <summary>The replacement refresh token, in the same session (token family) as the one it replaced.</summary>
+public sealed record RotatedRefreshToken(Guid UserId, string RefreshToken, DateTimeOffset ExpiresAt);
+
+public sealed record RotationResult(RotatedRefreshToken? Token, RefreshTokenProblem? Problem)
+{
+    public static RotationResult Rotated(RotatedRefreshToken token) => new(token, null);
+    public static RotationResult Refused(RefreshTokenProblem problem) => new(null, problem);
+}
+
 /// <summary>Port: issues JWT access tokens and stores (hashed) refresh tokens.</summary>
 public interface ITokenIssuer
 {
-    /// <summary>Starts a new session for <paramref name="user"/>.</summary>
+    /// <summary>Starts a new session (token family) for <paramref name="user"/>.</summary>
     Task<IssuedTokens> IssueAsync(UserAccount user, CancellationToken ct);
+
+    /// <summary>
+    /// Exchanges a live refresh token for a new one in the same family. Race-safe: of concurrent calls with the
+    /// same token, at most one succeeds; the others get <see cref="RefreshTokenProblem.AlreadyRotated"/>.
+    /// </summary>
+    Task<RotationResult> RotateRefreshTokenAsync(string refreshToken, CancellationToken ct);
+
+    /// <summary>A fresh access token carrying <paramref name="user"/>'s current data.</summary>
+    AccessToken CreateAccessToken(UserAccount user);
 }

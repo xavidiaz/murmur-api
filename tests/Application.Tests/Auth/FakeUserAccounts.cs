@@ -51,4 +51,33 @@ internal sealed class FakeTokenIssuer : ITokenIssuer
         return Task.FromResult(new IssuedTokens(
             $"access-{user.Id}", Now.AddMinutes(15), $"refresh-{user.Id}", Now.AddDays(30)));
     }
+
+    /// <summary>Refresh tokens <see cref="RotateRefreshTokenAsync"/> accepts, mapped to their owner.</summary>
+    public Dictionary<string, Guid> LiveRefreshTokens { get; } = [];
+
+    /// <summary>When set, <see cref="RotateRefreshTokenAsync"/> refuses every token for this reason.</summary>
+    public RefreshTokenProblem? NextRotationProblem { get; set; }
+
+    public List<string> RotationsRequested { get; } = [];
+    public List<Guid> AccessTokensFor { get; } = [];
+    private int _rotations;
+
+    public Task<RotationResult> RotateRefreshTokenAsync(string refreshToken, CancellationToken ct)
+    {
+        RotationsRequested.Add(refreshToken);
+        if (NextRotationProblem is { } problem)
+            return Task.FromResult(RotationResult.Refused(problem));
+        if (!LiveRefreshTokens.Remove(refreshToken, out var userId))
+            return Task.FromResult(RotationResult.Refused(RefreshTokenProblem.Unknown));
+
+        var next = $"refresh-{userId}-{++_rotations}";
+        LiveRefreshTokens[next] = userId;
+        return Task.FromResult(RotationResult.Rotated(new RotatedRefreshToken(userId, next, Now.AddDays(30))));
+    }
+
+    public AccessToken CreateAccessToken(UserAccount user)
+    {
+        AccessTokensFor.Add(user.Id);
+        return new AccessToken($"access-{user.Id}-{user.DisplayName}", Now.AddMinutes(15));
+    }
 }
